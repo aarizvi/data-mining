@@ -1,0 +1,613 @@
+---
+title: "STA 546 - Homework 4"
+author: "Abbas Rizvi"
+date: "May 6, 2016"
+header-includes:
+        - \usepackage{subfigure}
+        - \usepackage{graphicx}
+        - \newcommand{\indep}{\rotatebox[origin=c]{90}{$\models$}}
+output: 
+        pdf_document:
+                fig_caption: true
+                keep_tex: yes
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE,
+                      fig.align="center",
+                      message=FALSE,
+                      echo=FALSE)
+library(knitr)
+```
+
+# Problem 1
+The `cad1` data set in the package `gRbase` was considered. The `cad1` data set consists of 236 observations on fourteen variables from the Danish Heart Clinic. 
+
+## Part 1A.
+**Construct this network in R, and infer the Conditional Probability Tables using the cad1 data. Identify any d-separations in the graph.**
+
+```{r, echo=FALSE, fig.align="center", fig.width=3, fig.height=3, message=FALSE, fig.cap="Danish Heart Clinic Network", results='hide', fig.pos='h'}
+library(gRain)
+library(gRbase)
+## Load CAD Data
+data(cad1)
+###### Part A ######
+cad.dag <- dag(~CAD:Inherit:Hyperchol + Hyperchol:SuffHeartF + Inherit:Smoker + Hyperchol:Smoker + Smoker:Sex)
+cad.cpt <- extractCPT(cad1, cad.dag, smooth = 0.1) #smooth = 0.1 to avoid zeros in the CPTs
+plist <- compileCPT(cad.cpt)
+cad.net <- grain(plist)
+plot(cad.net)
+```
+An 'optimal network' was provided from a structural learning algorithm. The network was recapitulated by using a directed acyclic graphical (DAG) model (\textbf{Figure 1}). A `graph` object representing the CAD network was created using `gRbase::dag`. The conditional probability tables were extracted and compiled from the `graph` by inputting the corresponding `cad1` data (\textbf{Tables 1-6}) using `gRain` functions.
+
+The conditional probabilities that were constructed in the CAD network `graph` object are listed below:
+```{r, echo=FALSE}
+plist
+```
+
+\clearpage
+
+D-separation was identified from the following:
+\begin{align*}
+1. \text{  Inheritance } &\indep \text{ Sex } \big| \text{ Smoker}\\
+2. \text{  Hypercholesterolemia } &\indep \text{ Sex } \big| \text{ Smoker}\\
+3. \text{  Smoker } &\indep \text{ CAD } \big| \{\text{Inheritance } \cap \text{ Hypercholesterolemia}\}\\
+4. \text{  Heart Failure } &\indep \text{ CAD } \big| \text{ Hypercholesterolemia}\\
+\end{align*}
+
+\begin{table}[]
+\centering
+\label{my-label}
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+\multicolumn{3}{|c|}{Hypercholesterolemia = Yes}  & \multicolumn{2}{|c|}{Hypercholesterolemia = No} \\ \hline
+                                    & \multicolumn{2}{|l|}{Inheritance}  &  \multicolumn{2}{|l|}{Inheritance}            \\ \hline
+CAD                                 & No        & Yes & No                                 & Yes       \\ \hline
+No                                  & 0.8206651 & 0.5 & 0.4488491                          & 0.2609562 \\ \hline
+Yes                                 & 0.1793349 & 0.5 & 0.5511509                          & 0.7390438 \\ \hline
+\end{tabular}
+\caption{CAD Conditional Probability Table}
+\end{table}
+
+\begin{table}[]
+\centering
+\label{my-label}
+\begin{tabular}{|l|l|l|}
+\hline
+        & \multicolumn{2}{|c|}{Smoker} \\ \hline
+Inheritance & No        & Yes       \\ \hline
+No      & 0.8222656 & 0.6484881 \\ \hline
+Yes     & 0.1777344 & 0.3515119 \\ \hline
+\end{tabular}
+\caption{Genetic Inheritance Conditional Probability Table}
+\end{table}
+
+\begin{table}[]
+\centering
+\label{my-label}
+\begin{tabular}{|r|l|l|l|l|l|}
+\hline
+\multicolumn{3}{|c|}{Smoker = No}                                  & \multicolumn{3}{c|}{Smoker = Yes}                                \\ \hline
+\multicolumn{1}{|l|}{} & \multicolumn{2}{l|}{Suffer Heart Failure} &                      & \multicolumn{2}{l|}{Suffer Heart Failure} \\ \hline
+Hypercholesterolemia   & No                  & Yes                 & Hypercholesterolemia & No                  & Yes                 \\ \hline
+No                     & 0.6741294           & 0.2767857           & No                   & 0.4646226           & 0.3281787           \\ \hline
+Yes                    & 0.3258706           & 0.7232143           & Yes                  & 0.5353774           & 0.6718213           \\ \hline
+\end{tabular}
+\caption{Hypercholesterolemia Conditional Probability Table}
+\end{table}
+
+\begin{table}[]
+\centering
+\label{my-label}
+\begin{tabular}{|l|l|}
+\hline
+\multicolumn{2}{|c|}{Suffer Heart Failure}           \\ \hline
+No                   & Yes       \\ \hline
+0.7074513            & 0.2925487 \\ \hline
+\end{tabular}
+\caption{Heart Failure Conditional Probability Table}
+\end{table}
+
+\begin{table}[]
+\centering
+\label{my-label}
+\begin{tabular}{|l|l|l|}
+\hline
+& \multicolumn{2}{|c|}{Sex} \\ \hline
+Smoker & Female    & Male      \\ \hline
+No     & 0.3622881 & 0.1802326 \\ \hline
+Yes    & 0.6377119 & 0.8197674 \\ \hline
+\end{tabular}
+\caption{Smoker Conditional Probability Table}
+\end{table}
+
+\begin{table}[]
+\centering
+\label{my-label}
+\begin{tabular}{|l|l|}
+\hline
+\multicolumn{2}{|c|}{Sex} \\ \hline
+Female      & Male        \\ \hline
+0.1994073   & 0.8005927   \\ \hline
+\end{tabular}
+\caption{Sex Conditional Probability Table}
+\end{table}
+
+## Part 1B.
+**Suppose it is known that a new observation is female with Hypercholesterolemia (high cholesterol). Absorb this evidence into the graph, and revise the probabilities. How does the probability of heart-failure and coronary artery disease (CAD) change after this information is taken into account?**
+
+This observation was added as evidence into our graphical model. The output of adding the evidence was:
+
+```{r, echo=F, message=FALSE, results='hide'}
+##### PART B #####
+## Suppose it is known that a new observation is female with hypercholesterolemia (high cholesterol)
+## Absorb this evidence into the graph and revise the probabilities
+## How does the probability of heart-failure and CAD change after this info is taken into account?
+cad.net.evidence <- setEvidence(cad.net, evidence=list(Sex="Female", Hyperchol="Yes"))
+cad.net.evidence
+```
+
+Given evidence that the individual is a female with hypercholesterolemia, the probability of developing heart failure goes from 29.2% to 38.3% (**Table 7**). This individual's risk of heart failure goes up almost 10% given her present condition.
+
+\begin{table}[]
+\centering
+\begin{tabular}{|l|l|l|l|l|l|}
+\hline
+& \multicolumn{2}{|c|}{Heart Failure} & \multicolumn{2}{|c|}{Coronary Artery Disease} \\ \hline    
+                  & No        & Yes        & No          & Yes \\ \hline
+Original Evidence & 0.7074513 & 0.2925487  & 0.5401277   & 0.4598723 \\ \hline
+New Evidence      & 0.6167542 & 0.3832458  & 0.3927255   & 0.6072745 \\ \hline
+\end{tabular}
+\caption{Old Evidence/New Evidence Conditional Probabilities of Heart Failure/CAD}
+\label{my-label}
+\end{table}
+
+Likewise, when the assessing a female with hypercholesterolemia, the probability of developing CAD increases from 45.9% (female with no hypercholesterolemia) to 60.7% (female with hypercholesterolemia) (**Table 7**).
+
+\clearpage
+
+## Part 1C.
+\textbf{Simulate a new data set with new observations conditional upon this new evidence (in part B). Save this new data as a *.txt file, and submit it with your assignment. Using the new data set determine the joint distribution of “Smoker” and “CAD” given this evidence.}
+
+A new data set was simulated (5000 simulations) with new observations conditional upon the new evidence from part B using `gRain::simulate.grain`. The new data set can be found in the attached file `hw4q1c.txt`. The joint distribution of "Smoker" and "CAD" increases from 37.5% to 42.9% given new evidence of a female with hypercholesterolemia (**Table 8**). 
+
+```{r,echo=F, results='hide'}
+sim.cad <- simulate.grain(cad.net.evidence, nsim = 5000)
+xtabs(~CAD + Smoker, data=sim.cad) / nrow(sim.cad)
+xtabs(~CAD + Smoker, data=cad1)
+#caption = "Joint Distribution of CAD and Smoker with New Evidence"
+```
+\begin{table}[]
+\centering
+\label{my-label}
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+       & \multicolumn{2}{|c|}{Old Evidence} & \multicolumn{2}{|c|}{Simulated New Evidence} \\ \hline
+       & \multicolumn{2}{|c|}{Smoker}       & \multicolumn{2}{|c|}{Smoker} \\ \hline
+CAD    & No                                 & Yes    & No     & Yes      \\ \hline
+No     & 0.1320                             & 0.4081 & 0.1328 & 0.2686 \\ \hline
+Yes    & 0.0845                             & 0.3754 & 0.1694 & 0.4292 \\ \hline
+\end{tabular}
+\caption{Joint Distribution of CAD and Smoker with Old Evidence/Simulated New Evidence}
+\end{table}
+
+\newpage 
+
+# Problem 2
+The `heart.txt` data -- generated from the `reinis` data in `gRbase library` -- was downloaded from UB Learns. The data was collected from a 15-year follow up study of probable risk factors for coronary thrombosis in men employed in a car factory. The variables are: physical work, systolic blood pressure, ratio of lipoproteins, family history of coronary heart disease. The variables systolic blood pressure and ratio of lipoproteins are clinical markers for heart disease. 
+
+## Part 2A.
+The structure of the network was constructed based off of what seemed likely and sensible in terms of variable meaning (\textbf{Figure 2}). We constructed the model with the idea that many people who are undergoing mental stress and physical stress at a car factory (particularly when this study was taken place), probably smoked. Smoking can lead to high blood pressure (systol). These individuals whom conduct mental or physical work also may not smoke, may develop the high blood pressure irrespective of smoking, so we designed the model so the work stress is directly connected to high  systolic blood pressure as well. Also, an individual may have family inheritance that yields a higher susceptibility towards having a high lipoprotein ratio, or the individual may have family history indicating a higher susceptibility to high blood pressure irrespective of other lipoprotein ratio -- so we designed the model such that family history can lead to high lipooprotein ratio and furthermore, the high lipoprotein ratio can lead to high systolic blood pressure. A family history can also directly lead to high systolic blood pressure.
+
+```{r, echo=F, fig.cap = "Directed Acyclic Graph of Heart.txt Variables", fig.align="center", fig.width=3, fig.height=3, fig.pos="h"}
+heart <- read.table("/Users/aarizvi/Google Drive/STA546/hw4/heart-2.txt", header=T)
+heart.dag <-  dag(~systol:smoke:mental:phys:protein:family + smoke:phys:mental + protein:family + protein + smoke)
+heart.cpt <- extractCPT(heart, heart.dag, smooth = 0.1) #smooth = 0.1 to avoid zeros in the CPTs
+plist <- compileCPT(heart.cpt)
+heart.net <- grain(plist)
+plot(heart.net)
+```
+
+## Part 2B.
+\textbf{Based on your model in Part 2A, who is more likely to develop high systolic blood pressure (risk = yes), a person with strenuous mental work, or one with strenuous physical work, or both?}
+
+We investigated the joint probability of an individual having high blood pressure when there is evidence of them undergoing either physical or mental stress alone (without evidence of the other attribute, **Table 9**). An individual with strenuous mental work has a 33.7% probability of having high blood pressure and an individual with strenuous physical work has a 29.8% probability of having high blood pressure (**Table 9**). 
+\begin{table}[]
+\centering
+\begin{tabular}{|l|l|l|l|l|l|}
+\hline
+        & \multicolumn{2}{|c|}{Mental Work} & \multicolumn{2}{|c|}{Physical Work} \\ \hline    
+High Systol  & No        & Yes                & No          & Yes \\ \hline
+No      & 0.1820478 & 0.2402698               & 0.2166406   & 0.205677 \\ \hline
+Yes     & 0.2400985 & 0.3375839               & 0.2792904   & 0.298392 \\ \hline
+\end{tabular}
+\caption{Joint Probability of Mental/Physical Stress and High Systolic BP}
+\label{my-label}
+\end{table}
+
+We then investigated the joint probability of individuals having high blood pressure when there is evidence of their physical work and mental work status (**Table 10**). When an individual does not have strenuous physical work, but undergoes strenuous mental work during their work day, there is a 16.2% probability that the individual has high blood pressure. Likewise, if an individual is undergoing both physical and mental stress, the probability that the individual has high blood pressure is 17.6% (**Table 10**). 
+
+\begin{table}[]
+\centering
+\begin{tabular}{|l|l|l|l|l|l|}
+\hline
+        & \multicolumn{2}{|c|}{Physical Work = No} & \multicolumn{2}{|c|}{Physical Work = Yes} \\ \hline  
+        & \multicolumn{2}{|c|}{Mental Work} & \multicolumn{2}{|c|}{Mental Work} \\ \hline    
+High Systol  & No        & Yes                & No           & Yes \\ \hline
+No      & 0.0918180 & 0.1248226               & 0.09022978   & 0.1154472 \\ \hline
+Yes     & 0.1175374 & 0.1617530               & 0.12256107   & 0.1758309 \\ \hline
+\end{tabular}
+\caption{Joint Probability of High Systolic BP with Mental AND Physical Stress)}
+\label{my-label}
+\end{table}
+
+Therefore, our model predicts that an individual who is experiencing strenuous mental stress at work alone, without any evidence of their physical work status, the probability that they are likely to develop high blood pressure is the highest amongst all comparisons. 
+
+\clearpage
+
+# Problem 3
+Webgraph A (**Figure 3**) and webgraph B (**Figure 4**) were considered.
+
+The PageRank matrix of the graph is defined as:
+\begin{align*}
+M &= (1-p) \cdot A + p \cdot B \\
+\text{ where } B &= \frac{1}{n} \cdot \begin{bmatrix}
+ 1      & 1      & \cdots & 1\\
+ \vdots & \vdots & \ddots & \vdots \\
+ 1      & 1      & \cdots & 1
+\end{bmatrix} \\
+\text{where A} &= \text{transition matrix} \\
+\text{where p} &= \text{damping constant} \\
+\text{where n} &= \text{number of pages}
+\end{align*}
+
+A damping factor $p$ reflects the probability that a user who is surfing the web quits the current page they are browsing and "teleports" to a new page. Damping factors are implemented in order to overcome the problem of disconnected pages in a graph or pages with no outgoing links. 
+
+## Part 3A
+**Compute the PageRank vector of Webgraph A for damping constants p = 0.05, 0.25, 0.50, 0.75, and 0.95.**
+
+```{r, echo=F, message=F, fig.align='center', fig.width=6, fig.height=5, fig.cap = "Webgraph A", fig.pos='h'}
+library(glasso)
+library(Rgraphviz)
+library(igraph)
+# Construct an Igraph
+nodes <- data.frame(names=c("A","B","C","D","E","F"))
+relations <- data.frame(
+        from = c("C","F","B","B","E","D","D"),
+        to = c("A","C","C","E","D","B","E")
+)
+g <- graph.data.frame(relations, directed = TRUE, vertices = nodes)
+plot(g, main="Webgraph A")
+#pg <- page.rank(g)
+#pg$vector
+```
+
+The PageRank vector for webgraph A with was computed for damping constants $p$ = {0.05, 0.25, 0.50, 0.75, 0.95} using `igraph::page.rank`. 
+
+The highest value in the PageRank vectors $v_{p=0.05}, ... , v_{p=0.95}$ for webgraph A is denoted in bold type face:
+\begin{align}
+v_{p=0.05}^{*} &= \begin{bmatrix}
+   0.168 \\
+   0.164 \\
+   \bf{0.172} \\
+   0.168 \\
+   0.168 \\
+   0.160 
+ \end{bmatrix}
+v_{p=0.25}^{*} &= \begin{bmatrix}
+   0.179 \\
+   0.154 \\
+   \bf{0.185} \\
+   0.176 \\
+   0.173 \\
+   0.132
+ \end{bmatrix}
+v_{p=0.50}^{*} &= \begin{bmatrix}
+   \bf{0.192} \\
+   0.147 \\
+   0.186 \\
+   0.191 \\
+   0.184 \\
+   0.010 
+ \end{bmatrix}
+v_{p=0.75}^{*} &= \begin{bmatrix}
+   0.194 \\
+   0.148 \\
+   0.170 \\
+   \bf{0.218} \\
+   0.203 \\
+   0.070 \\
+ \end{bmatrix}
+v_{p=0.95}^{*} &= \begin{bmatrix}
+   0.173 \\
+   0.158 \\
+   0.145 \\
+   \bf{0.257} \\
+   0.232 \\
+   0.040 \\
+ \end{bmatrix}
+\end{align}
+
+**How sensitive is the PageRank vector, and overall ranking of importance, to the damping constant? Does the relative ranking of importance according to PageRank support your intuition?**
+
+If we look at the equation, the greater $p$ is, the lower the transition matrix $A$ is weighted and inversely, the greater $p$ is, more weight is given to the non-ambiguous matrix $B$. If we look back to the answers in \textbf{Equation (1)}, we can see that with lower damping constants, $p = \{0.05, 0.25\}$, the C node has the greatest probability in the resulting PageRank vectors. Intuitively, this makes sense, based off of the observation that C has two linking nodes and seems to be the center of the graph. Contrarily, it seems as though when above 0.5, the PageRank begins to converge towards node D as being the highest PageRank in the PageRank vector. This is interesting, but it makes sense, because as $p$ increases to these high values, the surfer is more likely to quit the page and "teleport" to a new one, and if it starts at any of the nodes B, D, or E, there is a cycle of outgoing links that lead back to D, so this could explain why it becomes the highest rank in the PageRank when the $B$ matrix holds most of the weight. 
+
+## Part 3B
+\textbf{Compute the PageRank vector of Webgraph B for damping constant p = 0.15.}
+
+The PageRank vector of Webgraph B (\textbf{Figure 4}) was computed with damping constant $p = 0.15$ using `igraph::page.rank`. The results can be seen in **Equation (2)**.
+
+```{r 3b, echo=F, message=F, fig.align='center', fig.width=6, fig.height=5, fig.cap = "Webgraph B", fig.pos="h"}
+nodesB <- data.frame(names=c("A","B","C","D","E","F","G","H"))
+relationsB <- data.frame(
+        from = c("B","C","D","E","F","G","H"),
+        to = c("A","A","B","B","C","C","C")
+)
+gb <- graph.data.frame(relationsB, directed = TRUE, vertices = nodesB)
+plot(gb, main="Webgraph B")
+```
+
+\begin{align}
+v_{p=0.15}^{*} &= \begin{bmatrix}
+   0.154 \\
+   0.142 \\
+   \bf{0.158} \\
+   0.109 \\
+   0.109 \\
+   0.109 \\
+   0.109 \\
+   0.109
+ \end{bmatrix} 
+\end{align}
+
+**Interpret your results in terms of the relationship between the number of incoming links that each node has. Does the relative ranking of importance according to PageRank support your intuition?**
+
+The C node has the highest probability in the eigenvector $v^{*}$ of the $M$ matrix for webgraph B. Intuitively, this makes sense, as 3 nodes (F, G, H) link to node C, while only two nodes link to nodes A (B and C) and B (D and E). The PageRank probabilities of A and B seem to reflect intuition as well, as we can see that vectors A and B have the next two highest probabilities in the PageRank vector, which makes sense as node A is higher than B because A linked to C (the highest PageRank). 
+
+\newpage 
+
+# Problem 4
+**The sinking of the Titanic is a famous event in history. The titanic data (UB learns) was collected by the British Board of Trade to investigate the sinking. Many well-known facts—from the proportions of first-class passengers to the ‘women and children first’ policy, and the fact that that policy was not entirely successful in saving the women and children in the third class— are reflected in the survival rates for various classes of passenger. You have been petitioned to investigate this data.**
+
+The `titanic` data was considered. Association rules and \textit{a priori} algorithm were implemented in order to conduct this analysis. A support of 0.001 and confidence of 0.2 were chosen as the minimum thresholds when setting up the rules. Support of an itemset is defined as the proportions of transactions in the data set which contain the item set. Confidence of a rule is defined as: $\frac{support(X \cap Y)}{support(X)}$. 
+
+This criteria was chosen based off of testing different numbers until 200+ rules came (and until children were represented in the item frequency). We can see in \textbf{Figure 5} that the most represented groups are adult, males, and non-survivors. 
+
+```{r 4arules, echo=F, fig.align="center", fig.cap="Item Frequency Plot of Titanic Data, Support = 0.001", fig.height=4, fig.width=4, message=F, fig.pos='h'}
+load("/Users/aarizvi/Google Drive/STA546/hw4/titanic.raw-2.rdata")
+library(arules)
+titanic <- as(titanic.raw, "transactions")
+itemFrequencyPlot(titanic, support = 0.001, cex.names = 0.8)
+```
+
+**Summarize your findings for British Board of Trade. Is there evidence that “women and children” were the first evacuated?**
+
+```{r survived.yes, echo=F, message=F, results='hide'}
+rules  <- apriori(titanic, parameter = list(support = 0.001, confidence = 0.2))
+survivors.female <- subset(rules, subset = rhs %in% "Survived=Yes" & lhs %in% "Sex=Female")
+survivors.child <- subset(rules, subset = rhs %in% "Survived=Yes" & lhs %in% "Age=Child")
+survivors.yes <- subset(rules, subset = rhs %in% "Survived=Yes")
+survivors.no <- subset(rules, subset = rhs %in% "Survived=No")
+jack <- subset(rules, subset = rhs %in% "Survived=No" & lhs %in% "Class=3rd" & lhs %in% "Age=Adult" & lhs %in% "Sex=Male")
+rose <- subset(rules, subset = rhs %in% "Survived=Yes" & lhs %in% "Class=1st" & lhs %in% "Age=Adult" & lhs %in% "Sex=Female")
+```
+We decided to subset the rules by women and children in order to investigate this claim in the policy.  We first looked at women as the RHS of the association rules sorted by lift. We chose lift because lift values are a solution to the problem of finding too many association rules that satisfy the support and confidence thresholds that we set for our analysis. A greater lift (typically > 1) indicates a strong association.  The results of women survivors can be seen in **Table 11** (only showing top 5 rules). 
+
+We then looked at children survivors sorted by lift (only showing top 5 rules, \textbf{Table 12}). It seems as though children in 2nd class had a higher probability of surviving the titanic than those from 1st class. Just from looking at the raw data **Table 13**, we can see that this result is probably because the sample size of children from 2nd class is more represented than children from 1st class. We can also see from just looking at the data (**Table 13**) that all children from 1st and 2nd class survived. And finally, our analysis reveals that the 'women and children' policy was legitimate and is supported by the `titanic` data set. 
+
+```{r, echo=F, results='hide'}
+survf <- inspect(head(sort(survivors.female, by="lift"),5))
+```
+
+```{r}
+kable(survf, caption = "Association Rules with RHS = {Survived=Yes}, LHS = {Sex=Female}")
+```
+
+```{r, echo=F, results='hide'}
+survchild <- inspect(head(sort(survivors.child, by="lift"),5))
+```
+
+```{r}
+kable(survchild, caption = "Association Rules with RHS = {Survived=Yes} and LHS = {Age=Child}")
+```
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|l|l|l|l|l|l|}
+\hline
+        & \multicolumn{4}{|c|}{Survived = No}    & \multicolumn{4}{|c|}{Survived = Yes}  \\ \hline  
+        & \multicolumn{4}{|c|}{Class}            & \multicolumn{4}{|c|}{Class}           \\ \hline    
+Age     & 1st & 2nd  & 3rd & Crew                & 1st & 2nd & 3rd & Crew                \\ \hline
+Adult   & 122 & 167  & 476 & 673                 & 197 & 94  & 151 & 212                 \\ \hline
+Child   & 0   & 0    & 52  & 0                   & 6   & 24  & 27  & 0                   \\ \hline
+\end{tabular}
+\caption{Survival Demographics from Raw Data Stratified by Age and Class}
+\label{my-label}
+\end{table}
+
+
+\textbf{What characteristics/demographics are more likely in surviving passengers?}
+
+To investigate this, we set the RHS of our association rules to `Survived=Yes` and sorted it by lift (all rules shown, \textbf{Table 14}). We can see from looking at the association rules in **Table 14**, that when the RHS was `Survived=Yes`, 1st/2nd class children were likely to survive, as well as all types of women. 
+
+```{r, echo=F, results='hide'}
+survyes <- inspect(head(sort(survivors.yes, by="lift"),20))
+```
+
+```{r}
+kable(survyes, caption = "Association Rules with Survived=Yes")
+```
+
+**What characteristics/demographics are more likely in passengers that perished?**
+
+To investigate this, we set the RHS of our association rules to `Survived=No` and sorted it by lift (all rules shown, **Table 15**). The passengers that perished were likely to have been men from 2nd/3rd class, crew members, and 3rd class children. 
+
+```{r, echo=F, results='hide'}
+survno <- inspect(head(sort(survivors.no, by="lift"),20))
+```
+
+```{r}
+kable(survno, caption = "Association Rules with Survived=No")
+```
+
+**How do your results support the popular movie “Titanic”? In the movie "Titanic", Rose was a 1st class adult woman and survived and Jack was 3rd class adult man and perished.**
+
+Our association rules and analysis of the data seem to agree with this idea from the movie (\textbf{Table 16}). The demographics that both Jack and Rose belong to seem to agree with their respective outcomes, which are that Jack perished and Rose survived. 
+
+```{r, echo=F, results='hide'}
+jackjill <- rbind(inspect(jack),inspect(rose))
+```
+
+```{r}
+kable(jackjill,caption= "Association Rules with Jack's and Rose's Demographics")
+```
+
+\newpage 
+
+# Problem 5
+We accessed the `datasets::state` data released from the US Department of Commerce, Bureau of the Census in R. The `state` dataset comes with 5 assigned variables: `state.abb`, `state.area`, `state.center`, `state.division`, `state.name`, `state.region`, and `state.x77`. `state.x77` is the raw data, while the others are factors that may or may not be useful when clustering the data.  
+
+## Part 5A
+We decided to cluster this data in two different ways:   
+1.  Unsupervised Hierarchical Clustering  
+2.  Principal Component Analysis  
+
+### Unsupervised Hierarchical Clustering
+We clustered the data in two different ways, the first being by states (rows in the `state.x77` raw data), and the second being by state facts (columns in the `state.x77` raw data). Hierarchical clustering was implemented by measuring dissimilarity ($1 - correlation(set)$) between observations and subsequently computing the distance of dissimilarity (either Manhattan or Euclidean). Furthermore, a linkage criterion (single, complete, or average linkage) was specified to compute the pairwise distances of observations in the sets. As this was an exploratory exercise, different combinations of distance metrics and linkage criterion were tested, and the dendrograms can be seen in \textbf{Figures 6-10}.
+
+We wanted to see how well the states could cluster given the state facts that were in the raw data. A simplified assumption of this type of clustering is that we would expect states that are closer geographically to one another, cluster closer together. In order to make this quantitative method qualitative, we colored the labels by `state.division` and `state.region`. 
+
+The labels of the dendrograms are colored by either `state.region` or `state.divsion`. Our subjective impression from the different clustering methods that we implemented, is that Euclidean distance with either complete/single linkage do the best jobs clustering this data (\textbf{Figure 6}, \textbf{Figure 7}).
+
+```{r, echo=F, message=F, fig.width=7.8, fig.height=10, fig.cap="Heirarchical Clustering by States", fig.pos='h'}
+data(state)
+## First need to pre-process data
+state.x77 <- data.frame(state.x77)
+rownames(state.x77) <- state.abb
+state.x77[["Population"]] <- state.x77[["Population"]]/1000 #Population in millions
+#per capita income measures average income earned per person in a given area
+#calculated by dividing area total income by its total population
+state.x77[["Income"]] <- state.x77[["Income"]]*10 #Per Capita Income in Tens of Thousands
+#pairs(state.x77)
+
+library(dendextend)
+hclust.state <- function(data, distance.metric, linkage.method, group){
+        dissimilarity <- 1-cor(t(data))
+        dis <- dist(dissimilarity, method=distance.metric)
+        hc <- hclust(dis, method=linkage.method)
+        hcd <- as.dendrogram(hc)
+        if(length(group)<=5){
+                colpal <- c('#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00')
+                labels_colors(hcd) <- colpal[group][order.dendrogram(hcd)] # Assigning the labels of dendrogram object with new colors:
+                hcd2 <- hcd %>% set("labels_cex", c(1,1))
+        }
+        else{
+                colpal <- c('#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')
+                labels_colors(hcd) <- colpal[group][order.dendrogram(hcd)]
+                hcd2 <- hcd %>% set("labels_cex", c(1,1))
+        }
+        plot(hcd2, main=paste(distance.metric,' distance/',linkage.method, ' linkage', sep=""), cex.main=1)
+        legend("topright", text.col=colpal, cex=1, levels(group))
+}
+
+linkage <- c("single", "complete", "average")
+distance <- c("manhattan", "euclidean")
+
+par(mfrow = c(4,1), mar = c(2,2,2,2))
+for(i in 1:length(linkage)){
+        for(j in 1:length(distance)){
+                hclust.state(state.x77, distance[j], linkage[i], state.region)
+                hclust.state(state.x77, distance[j], linkage[i], state.division) 
+        }
+}
+```
+
+We also clustered by state facts using the same pipeline for implementing hierarchical clustering as described above. Since there is no way of qualitatively interpreting this data (as we do not necessarily know any true relationships of these variables), the interpretation that can be learned from this analysis is how different distance metrics and linkage methods cluster the different variables and if they are clustered near one another, the variables taken together may allow one to predict or classify what state the data is coming from. But we can also look at these variables with logic and make some assumptions on which clustering method did the "best". However, looking at the dendrograms in \textbf{Figure 9-10}, it seems that the different methods mostly agree with one another. That is, the clusters are Frost-Life Expectancy, Income-HS grad, Murder-Illiteracy, and Population-Area.
+
+```{r, echo=F, message=F, fig.width=8, fig.height=10, fig.cap="Heirarchical Clustering by State Facts", fig.pos='h'}
+hclust.cat <- function(data, distance.metric, linkage.method){
+        dissimilarity <- 1-cor(data)
+        dis <- dist(dissimilarity, method=distance.metric)
+        hc <- hclust(dis, method=linkage.method)  
+        plot(hc, main=paste(distance.metric, ' distance/',linkage.method, ' linkage', sep=""), xlab=NULL)
+}
+par(mfrow=c(3,1))
+for(i in 1:length(linkage)){
+        for(j in 1:length(distance)){
+                hclust.cat(state.x77, distance[j], linkage[i])
+        }
+}
+```
+
+### Principal Component Analysis
+The second way that we looked at the relationships between the State Fact variables was principal component analysis (PCA). This was calculated by singular value decomposition (`stats::prcomp`) for both of these groups, such that the data was centered and scaled. PCA is successful if the variance of the data set is captured in the first few PCs. We used screeplots in order to visualize how well the variance was captured when conducting PCA by either states (\textbf{Figure 11}). We can see that the most of the variance has been captured in the first 2 PCs (**Figure 11**). 
+
+```{r, echo=F, fig.cap="Screeplot of PCA by States", results='hide', fig.width=4, fig.height=4}
+## PCA 
+## By columns (State Facts)
+library(scatterplot3d)
+fit <- prcomp(state.x77, center=TRUE, scale=TRUE)
+screeplot(fit, type="lines", main="Screeplot of PCA by States")
+#summary(pc)
+```
+
+Next, we decided to look at biplots so we can see the dispersion of states in the principal component space, being labeled by State Facts as directional vectors. **Figure 12** and **Figure 13** are the same biplots, but **Figure 12** is labeled by state region and **Figure 13** is labeled by state division. Looking at the state fact vectors in **Figure 12* and **Figure 13**, we can see, visually, that the vectors that are nearest each other agree with the clusters from the hierarchical clustering (**Figure 9, Figure 10**). However, the biplot is more informative because we can actually see how the states are clustering, especially when they are labeled by either division or region. It seems as though the deep South is quite uneducated and likely to commit murder compared to some other states. It also seems like the colder states are generally more peaceful, survive longer, and are more educated. It's actually quite an interesting finding. 
+
+```{r}
+## lets look at a biplot too and color the dots by state abbreviations
+library(ggbiplot)
+mybiplot <- function(groups=region, group.title="Legend"){
+g <- ggbiplot(fit, obs.scale=2, var.scale=1, groups=groups, labels = state.abb,
+              labels.size=6, varname.size=7, varname.adjust=1.2)
+g <- g + theme(legend.text=element_text(size=14), legend.key.size=unit(1, "cm"),
+               legend.title=element_text(size=14, face="bold" ),
+               axis.title=element_text(size=14, face="bold"))
+g <- g + labs(color=group.title)
+g
+}
+```
+
+```{r, fig.pos='h', fig.width=10, fig.height=6, fig.cap='Biplot labeled by State Regions'}
+mybiplot(state.region, "State Regions")
+```
+
+```{r, fig.pos='h', fig.width=10, fig.height=6, fig.cap='Biplot labeled by State Divisions'}
+mybiplot(state.division, "State Divisions")
+```
+
+## Part 5B
+
+Given the results in \textbf{Part 5A}, we were asked to develop a Gaussian Graphical Model (GGM) from the `state` dataset and compare our results to \textbf{5A}. GGMs are continuous graphical models with Gaussian assumptions. We represent the data by the inverse of the covariance matrix. The idea is impose a penalty on a sparsity which is directly implemented from the `glasso` package in `R`. It shrinks some of the entries of the inverse covariance matrix to 0. GGMs should be used to describe general relationships and not as definitive evidence of relationships. Here we implement different $\rho$ penalties ($\rho=\{2, 4, 6, 10, 15, 30\}$) to profile model development with greater penalties (\textbf{Figure 14}). GGMs are a reasonable way to characterize the relationship of the variables in this dataset because they are very few variables and in these types of situations linkage methods aren't very effective, and as such, in these types of scenarios, graphical modeling can perhaps be the most powerful. 
+
+```{r, echo=F, fig.height=13, fig.width=11, message=F, fig.cap="Gaussian Graphical Models with Different Rho Values"}
+library(gRbase)
+library(gRim)
+library(gRain)
+library(glasso)
+library(igraph)
+library(ggm)
+
+# Look at partial correlation
+S.body <- cov.wt(state.x77, method = "ML")
+PC.body <- cov2pcor(S.body$cov)
+#heatmap(PC.body) 
+S <- S.body$cov 
+# Estimate a single graph
+m0.lasso <- glasso(S, rho = 0.1) 
+# Estimate over a range of rho's
+rhos <- c(2, 4, 6, 10, 15, 30) #model selection aspect ... try range of rhos (complexity parameter?)
+#rho -- vector of non-negative regularization parameters for the lasso
+#should be increasing from smallest to largest value of rho
+m0.lasso <- glassopath(S, rho = rhos, trace=0)
+par(mfrow=c(3,2))
+for (i in 1:length(rhos)){
+        my.edges <- m0.lasso$wi[, , i] != 0 #stack of matrices
+        diag(my.edges) <- FALSE
+        g.lasso <- as(my.edges, "graphNEL") # convert for plotting
+        nodes(g.lasso) <- names(state.x77)
+        glasso.net <- cmod(g.lasso, data = state.x77)
+        plot(glasso.net)
+        title(main=paste("rho = ", rhos[i], sep=""))
+}
+```
+
+We can see in \textbf{Figure 14}, that as $\rho$ increases, the more 'less important' variables will leave the 'nest'. More order begins to come to the graphical model as $\rho$ increases. When $\rho$ is 10, we see that `Frost` is quite central to the model still, but as $\rho$ moves to 15 and 30, `Frost` moves further down. It seems as though for this data set, that `income` and `area` are the central link to all of these other variables, which certainly makes sense, because many times, the area that one lives in, dictates the cost of living and average income of said area. Overall, it seems like we can gather a better idea of the relationships between these state facts from the GGM as opposed to the clustering methods used in \textbf{Part 5A}. 

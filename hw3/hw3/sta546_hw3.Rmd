@@ -1,0 +1,178 @@
+---
+title: "STA 546 - Homework 3"
+author: "Abbas Rizvi"
+date: "April 8, 2016"
+output: 
+        pdf_document:
+                fig_caption: true
+                keep_tex: yes
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE)
+```
+
+# Problem 1
+The data sets "Les Miserables" and "Dolphins" networks were accessed from the Nexus repository using the `igraph::nexus.get` function in `R`. 
+
+```{r}
+library(igraph)
+dolphins <- nexus.get("dolphins")
+miserables <- nexus.get("miserables")
+```
+
+`dolphins` is an `igraph` object containing a dataset pertianing to an undirected social network of frequent associations between 62 dolphins in a community living off Doubtful Sound, New Zealand. `miserables` is also an `igraph` object containing a coappearance weighted network of characters in the French novel *Les Miserables* by Victor Hugo. Two characters are connected if they appear in the same scene. The weight of the connection is the number of common appearances.
+
+Hierarchical random graphs (HRG) were used on `dolphins` and `miserables` to perform the tasks subsequent subsections of section 1.
+
+## 1.1 Reveal Communities and Construct MCMC-based dendrogram
+`igraphdemo('hrg')` was used as a tutorial/guide for subsection 1.1. The same pipeline was used for both the `dolphins` and `miserables` for this analysis.  
+
+The `dolphins` network was organized into a community structure using the `igraph::optimal.community` function. `optimal.community` calculates community structure of a graph by maximizing the modulatrity measure over all possible partitions. The communities for `dolphins` and `miserables` can be seen in Figure 1 and 3, respectively. We can see the constructed communitie did a good job identifying differing groups. 
+
+```{r, message=FALSE, fig.align="center", fig.width=10, fig.height=12, fig.cap="Clustered Dolphin Communities"}
+load("dolphins_optcom.Rdata") #optimal community
+V(dolphins)$comm <- membership(dolphins.optcom) #membership gives vertices 
+plot(dolphins.optcom, dolphins) #revelation of communities
+```
+
+We now want to fit our `igraph` objects (`dolphins`/`miserables`) to a HRG. HRG conducts MCMC steps to perform the fitting until convergence. Dendrograms were constructed using the `hrg` objects and we can see that for both hrg-fitted `dolphin` and `miserables` datasets, that the dendrograms were able to represent the clusters in a much cleaner fashion than the community plots (Figure 2 and 4). 
+
+```{r, message=FALSE, fig.align="center", fig.width=10, fig.height=12, fig.cap="Dendrogram of MCMC-based Sampling of Dolphin Network"}
+hrg <- hrg.fit(dolphins) #MCMC sampling
+library(ape)
+# plot it as dendrogram, looks better if the 'ape' package is installed
+plot_dendrogram(hrg, mode="phylo", edge.color="black", cex=0.8)
+```
+
+```{r, message=FALSE, echo=FALSE, fig.cap="Clustered Les Miserables Communities", fig.align="center", fig.width=10, fig.height=11}
+load("miserables_optcom.Rdata")
+V(miserables)$comm <- membership(miserables.optcom) #membership gives vertices
+plot(miserables.optcom, miserables) #revelation of communities
+```
+
+```{r, message=FALSE, echo=FALSE, fig.cap="Dendrogram of MCMC-based Sampling of Les Miserables Network", fig.align="center", fig.width=10, fig.height=11}
+hrg.mis <- hrg.fit(miserables) #MCMC sampling
+# plot it as dendrogram, looks better if the 'ape' package is installed
+plot_dendrogram(hrg.mis, mode="phylo", edge.color="black", cex=0.8)
+```
+
+## 1.2 Link-prediction of noisy versions of the Dolphin network dataset
+For section 1.2 we were asked to focus on the `dolphins` network only. The helper function `link.prediction` was written such that a user-specified percentage of random sampling of edges was conducted and the sampled edges were subsequently deleted from the complete datasets, with the purpose of creating a 'noisy' dataset. We wanted to see how well we were able to predict the edges that were deleted from the complete dataset. 
+
+```{r, message=FALSE, echo=FALSE}
+link.prediction <- function(igraph.object, cutoff.percentage){
+        #set seed before sampling
+        set.seed(1)
+        #sample edges
+        sample.edges <- sample(1:length(E(igraph.object)), 
+                               round(length(E(igraph.object))*(cutoff.percentage/100)))
+        igraph.subset <- delete.edges(igraph.object, sample.edges)
+        pred <- hrg.predict(igraph.subset)
+        pred.edges <- pred$edges
+        pred.prob <- pred$prob
+        deleted.edges.idx <- get.edges(igraph.object, sample.edges)
+        rowmatch <- function(A,B) { 
+                f <- function(...) paste(..., sep=":") 
+                if(!is.matrix(B)) B <- matrix(B, 1, length(B)) 
+                a <- do.call("f", as.data.frame(A)) 
+                b <- do.call("f", as.data.frame(B)) 
+                match(b, a) 
+        } 
+        correct.pred.idx <- rowmatch(pred.edges, deleted.edges.idx)
+        num.correct <- length(correct.pred.idx)
+        total.predictions <- nrow(pred.edges) 
+        pred.deleted.edges.prob <- pred$prob[correct.pred.idx]
+        vertices <- V(igraph.object)[pred.edges[correct.pred.idx,]]$name
+        answer <- cbind(vertices[1:(length(vertices)/2)], 
+                        vertices[((length(vertices)/2)+1):length(vertices)],
+                        round(pred.deleted.edges.prob,4))
+        colnames(answer) <- c("v1", "v2", "predicted probability")
+        answer
+}
+```
+
+
+```{r}
+set.seed(1)
+link.prediction(dolphins, 5)
+```
+`link.prediction` was set to a 5 percent sampling deletion (8 edges of the 159) (See attached `R` code hw3.R for `link.prediction`). The eight edges were able to be predicted by `igraph::hrg.predict`. `igraph::hrg.predict` uses HRG MCMC-sampling to predict missing edges from a network. This done using the optimum model -- proportional to their likelihood. With the 5% deletion, the edges were predicted, but with low probabilities for the most part, only two have >10% probability of being predicted. 
+
+## 1.3 Repeating with 2.2 with more deletions (15% and 40%)
+```{r}
+link.prediction(dolphins, 15)
+link.prediction(dolphins, 40)
+```
+
+`link.prediction` was used to randomly delete 15% and 40% of the `dolphin` graph, respectively. It seems as the edges can always be predicted regardless of the percent deletion, however, the probability to be predicted remains relatively low for the most part, but as sample deletion increases, there are more predicted values of >10% than in smaller deletions.
+
+# Problem 2 
+Exercise 3.11 from Koller et al. was adopted for this problem. The following Bayesian Network (`B`) by Judea Pearl was considered:
+
+```{r, echo=F, message=FALSE, fig.align="center", fig.height=4, fig.width=6, fig.cap = "Original Bayesian Network B", cache=FALSE}
+library(RBGL)
+library(ggm)
+library(gRbase)
+library(gRain)
+library(Rgraphviz)
+b <- DAG(alarm~burglary, alarm~earthquake, john~alarm, john~tv,  mary~alarm, mary~nap, order=FALSE)
+b.graph <- as(b, "graphNEL")
+plot(b.graph, main = "Original Bayesian Network B")
+```
+
+The original Bayesian Network `B` (Figure 5) was marginalized over the `alarm` node. Subsequently, a Bayesian Network `B'` was constructed such that it was the minimal I-map for the marginal distribution $P_{B}(\text{B, E, T, N, J, M})$. The minimal I-map for the marginalized network Bayesian Network `B'` was constructed such that the independencies from `B` were preserved (Figure 6) . We utilized the `ggm::inducedDAG` function in `R` to construct this I-map.  
+
+```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=6, fig.cap = "Bayesian Network B'", cache=FALSE}
+b.prime <- inducedDAG(b, order=c("burglary", "earthquake", "tv", "nap", "john", "mary"))
+b.prime.graph <- as(b.prime,"graphNEL")
+plot(b.prime.graph, main="Minimal I-map for Marginal Bayesian Network B'")
+```
+
+# Problem 3 
+A toy directed acyclic graph (DAG) was assembled in order to determine d-separation between nodes (Figure 7). 
+
+```{r, echo=FALSE, fig.cap = "Toy DAG Model", fig.align="center", fig.width=6, fig.height=4}
+dag <- list(~a, ~c|a, ~d|a:b, ~b, ~e|b, ~g|d:e, ~f|c:e, ~g|d:e, ~h|f:g)
+dag.list <- dagList(dag)
+plot(dag.list)
+```
+
+Determine if the following statements are "`TRUE`" or "`FALSE`" based on the DAG:
+
+The helper function `dCon` was written for questions pertaining to 'd-connected' nodes
+
+```{r}
+dCon <- function(dSep){
+        if(dSep==FALSE){
+                as.logical(dSep+1)
+        }
+        else{
+                as.logical(dSep*0)
+        }
+}
+```
+
+## A) C and G are d-separated
+```{r}
+dSep(as(dag.list, "matrix"), "c", "g", NULL)
+```
+
+## B) C and E are d-separated
+```{r}
+dSep(as(dag.list, "matrix"), "c", "e", NULL)
+```
+
+## C) C and E are d-connected given evience about G
+```{r}
+dCon(dSep(as(dag.list, "matrix"), "c", "e", "g"))
+```
+
+## D) A and G are d-connected given evidence about D and E
+```{r}
+dCon(dSep(as(dag.list, "matrix"), "a", "g", c("d","e")))
+```
+
+## E) A and G are d-connected given evidence on D
+```{r}
+dCon(dSep(as(dag.list, "matrix"), "a", "g", "d"))
+```
